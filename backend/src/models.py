@@ -98,6 +98,38 @@ class AnalysisJob(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+class ExpediteShift(Base):
+    __tablename__ = "expedite_shifts"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    shift_code: Mapped[str] = mapped_column(String(20), unique=True)
+    quota_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    updated_by: Mapped[str] = mapped_column(String(40), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc)
+
+class ExpediteBatch(Base):
+    __tablename__ = "expedite_batches"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    shift_id: Mapped[int] = mapped_column(ForeignKey("expedite_shifts.id"), index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(64), unique=True)
+    list_version: Mapped[str] = mapped_column(String(64))
+    case_ids: Mapped[list] = mapped_column(JSON, default=list)
+    confirmed_by: Mapped[str] = mapped_column(String(40))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+
+class ExpediteGrant(Base):
+    __tablename__ = "expedite_grants"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    shift_id: Mapped[int] = mapped_column(ForeignKey("expedite_shifts.id"), index=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("delay_cases.id"), unique=True)
+    batch_id: Mapped[int | None] = mapped_column(ForeignKey("expedite_batches.id"), nullable=True)
+    action_id: Mapped[int | None] = mapped_column(ForeignKey("dispatch_actions.id"), nullable=True)
+    source: Mapped[str] = mapped_column(String(16))
+    severe_probability: Mapped[float] = mapped_column(Float, default=0)
+    idempotency_key: Mapped[str | None] = mapped_column(String(80), unique=True, nullable=True)
+    granted_by: Mapped[str] = mapped_column(String(40))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
     id: Mapped[int] = mapped_column(primary_key=True)
